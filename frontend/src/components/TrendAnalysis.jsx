@@ -44,16 +44,27 @@ function TrendAnalysis({ data, loading }) {
               <div className="space-y-2">
                 <TrendStat 
                   label="Trend Direction"
-                  value={analysis.trend.direction}
-                  icon={getTrendIcon(analysis.trend.direction)}
+                  value={analysis.trend?.direction || 'N/A'}
+                  icon={getTrendIcon(analysis.trend?.direction)}
+
                 />
                 <TrendStat 
                   label="Rate of Change"
-                  value={`${analysis.trend.rate} ${analysis.trend.unit}/month`}
+                  value={
+                    analysis.trend?.rate && analysis.trend?.unit
+                      ? `${analysis.trend.rate} ${analysis.trend.unit}`
+                      : 'N/A'
+                  }
+                  
                 />
                 <TrendStat 
                   label="Confidence"
-                  value={`${(analysis.trend.confidence * 100).toFixed(1)}%`}
+                  value={
+                    analysis.trend?.confidence != null
+                      ? `${(analysis.trend.confidence * 100).toFixed(1)}%`
+                      : 'N/A'
+                  }
+                  
                 />
               </div>
             </div>
@@ -77,7 +88,8 @@ function TrendAnalysis({ data, loading }) {
                       <span className={`px-2 py-1 rounded text-xs ${
                         anomaly.deviation > 3 ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
                       }`}>
-                        {anomaly.deviation.toFixed(1)} σ
+                        {(anomaly.deviation ?? 0).toFixed(1)} σ
+
                       </span>
                     </div>
                   ))}
@@ -93,7 +105,7 @@ function TrendAnalysis({ data, loading }) {
         <h3 className="text-lg font-semibold mb-4">Seasonal Patterns</h3>
         <div className="space-y-4">
           {Object.entries(data).map(([metric, analysis]) => (
-            analysis.seasonality.detected && (
+            analysis.seasonality?.detected && (
               <div key={metric} className="border-b pb-4">
                 <h4 className="font-medium text-gray-700 mb-2 capitalize">{metric}</h4>
                 <div className="grid grid-cols-2 gap-4">
@@ -106,7 +118,8 @@ function TrendAnalysis({ data, loading }) {
                     </p>
                   </div>
                   <div className="space-y-1">
-                    {Object.entries(analysis.seasonality.pattern).map(([season, data]) => (
+                  {Object.entries(analysis.seasonality?.pattern || {}).map(([season, data]) => (
+
                       <div key={season} className="flex justify-between text-sm">
                         <span className="capitalize">{season}</span>
                         <span>{data.avg.toFixed(1)} ({data.trend})</span>

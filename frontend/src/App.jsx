@@ -3,8 +3,18 @@ import Filters from './components/Filters';
 import ChartContainer from './components/ChartContainer';
 import TrendAnalysis from './components/TrendAnalysis';
 import QualityIndicator from './components/QualityIndicator';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import {
+  getLocations,
+  getMetrics,
+  getClimateData,
+  getClimateSummary,
+  getTrends
+} from './api';
 
 function App() {
+  // App-level state management
   const [locations, setLocations] = useState([]);
   const [metrics, setMetrics] = useState([]);
   const [climateData, setClimateData] = useState([]);
@@ -19,37 +29,66 @@ function App() {
   });
   const [loading, setLoading] = useState(false);
 
-  // Existing useEffect for locations and metrics
+  // Initial fetch for static dropdown values
+  useEffect(() => {
+    const fetchInitial = async () => {
+      try {
+        const [locRes, metricRes] = await Promise.all([
+          getLocations(),
+          getMetrics()
+        ]);
+        setLocations(locRes.data);
+        setMetrics(metricRes.data);
+      } catch (err) {
+        console.error('Error loading initial data:', err);
+      }
+    };
+    fetchInitial();
+  }, []);
 
-  // Updated fetch function to handle different analysis types
+  // Trigger data fetch when filters change
+  useEffect(() => {
+    if (filters.locationId && filters.metric) {
+      fetchData();
+    }
+  }, [filters]);
+
+  // Fetch and update data based on selected analysis type
   const fetchData = async () => {
     setLoading(true);
     try {
-      const queryParams = new URLSearchParams({
-        ...(filters.locationId && { location_id: filters.locationId }),
-        ...(filters.startDate && { start_date: filters.startDate }),
-        ...(filters.endDate && { end_date: filters.endDate }),
-        ...(filters.metric && { metric: filters.metric }),
-        ...(filters.qualityThreshold && { quality_threshold: filters.qualityThreshold })
-      });
-
-      let endpoint = '/api/v1/climate';
+      let res;
       if (filters.analysisType === 'trends') {
-        endpoint = '/api/v1/trends';
+        res = await getTrends(filters);
+        setTrendData(res.data);
+        if (!res.data || Object.keys(res.data).length === 0) {
+          toast.warn("No trend data found. Try different filters.");
+        }
       } else if (filters.analysisType === 'weighted') {
-        endpoint = '/api/v1/summary';
-      }
-
-      const response = await fetch(`${endpoint}?${queryParams}`);
-      const data = await response.json();
-      
-      if (filters.analysisType === 'trends') {
-        setTrendData(data.data);
+        res = await getClimateSummary(filters);
+        const summaryArray = Object.entries(res.data).map(([metric, stats]) => ({
+          ...stats,
+          metric_name: metric,
+          date: '',
+          value: stats.weighted_avg,
+          location_name: 'Summary',
+          quality: 'excellent',
+          unit: stats.unit || 'celsius',
+        }));
+        setClimateData(summaryArray);
+        if (summaryArray.length === 0) {
+          toast.warn("No summary data found. Try different filters.");
+        }
       } else {
-        setClimateData(data.data);
+        res = await getClimateData(filters);
+        setClimateData(res.data);
+        if (!res.data || res.data.length === 0) {
+          toast.warn("No climate data found. Try different filters.");
+        }
       }
-    } catch (error) {
-      console.error('Error fetching data:', error);
+    } catch (err) {
+      console.error('Fetch error:', err);
+      toast.error("Something went wrong while fetching data.");
     } finally {
       setLoading(false);
     }
@@ -57,6 +96,7 @@ function App() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
+      {/* Page Header */}
       <header className="mb-8 text-center">
         <h1 className="text-4xl font-bold text-eco-primary mb-2">
           EcoVision: Climate Visualizer
@@ -66,6 +106,7 @@ function App() {
         </p>
       </header>
 
+      {/* Filters Component */}
       <Filters 
         locations={locations}
         metrics={metrics}
@@ -74,6 +115,7 @@ function App() {
         onApplyFilters={fetchData}
       />
 
+      {/* Visualization Components */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
         {filters.analysisType === 'trends' ? (
           <TrendAnalysis 
@@ -100,12 +142,17 @@ function App() {
         )}
       </div>
 
+      {/* Quality Indicator + Toast Alerts */}
       <QualityIndicator 
         data={climateData}
         className="mt-6"
       />
+      <ToastContainer position="top-center" />
     </div>
   );
 }
 
 export default App;
+
+
+

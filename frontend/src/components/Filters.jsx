@@ -14,14 +14,17 @@ function Filters({ locations, metrics, filters, onFilterChange, onApplyFilters }
   const handleSubmit = (e) => {
     e.preventDefault();
     onFilterChange(localFilters);
-    onApplyFilters();
   };
+
+  console.log("📍 Locations:", locations);
+  console.log("📊 Metrics:", metrics);
+
 
   return (
     <div className="bg-white p-4 rounded-lg shadow-md">
       <h2 className="text-xl font-semibold text-eco-primary mb-4">Filter Data</h2>
       <form onSubmit={handleSubmit} className="space-y-4 md:space-y-0 md:grid md:grid-cols-12 md:gap-4 items-end">
-        {/* Existing location, metric, date filters */}
+        
         
         <div className="md:col-span-2">
           <label htmlFor="qualityThreshold" className="block text-sm font-medium text-gray-700 mb-1">
@@ -41,6 +44,44 @@ function Filters({ locations, metrics, filters, onFilterChange, onApplyFilters }
             <option value="poor">Poor</option>
           </select>
         </div>
+        {/* Add location filter */}
+        <div className="md:col-span-2">
+          <label htmlFor="locationId" className="block text-sm font-medium text-gray-700 mb-1">
+            Location
+          </label>
+          <select
+            id="locationId"
+            name="locationId"
+            value={localFilters.locationId}
+            onChange={handleChange}
+            className="w-full rounded-md border-gray-300 shadow-sm focus:border-eco-primary focus:ring focus:ring-eco-primary focus:ring-opacity-50"
+          >
+            <option value="">Select Location</option>
+            {locations.map(loc => (
+              <option key={loc.id} value={loc.id}>{loc.name}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Add metric filter */}
+        <div className="md:col-span-2">
+          <label htmlFor="metric" className="block text-sm font-medium text-gray-700 mb-1">
+            Metric
+          </label>
+          <select
+            id="metric"
+            name="metric"
+            value={localFilters.metric}
+            onChange={handleChange}
+            className="w-full rounded-md border-gray-300 shadow-sm focus:border-eco-primary focus:ring focus:ring-eco-primary focus:ring-opacity-50"
+          >
+            <option value="">Select Metric</option>
+            {metrics.map(metric => (
+              <option key={metric.name} value={metric.name}>{metric.display_name}</option>
+            ))}
+          </select>
+        </div>
+
 
         <div className="md:col-span-2">
           <label htmlFor="analysisType" className="block text-sm font-medium text-gray-700 mb-1">
@@ -59,8 +100,14 @@ function Filters({ locations, metrics, filters, onFilterChange, onApplyFilters }
             <option value="anomalies">Anomalies</option>
           </select>
         </div>
+        <button
+          type="submit"
+          className="md:col-span-2 bg-eco-primary text-white py-2 px-4 rounded hover:bg-eco-primary-dark"
+        >
+          Apply Filters
+        </button>
 
-        {/* Existing submit button */}
+        
       </form>
     </div>
   );
